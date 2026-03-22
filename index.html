@@ -11,9 +11,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
-    <style>
-        :root { --primary: #3182ce; --primary-hover: #2b6cb0; --success: #38a169; --danger: #e53e3e; --warning: #d69e2e; --dark: #2c3e50; --bg: #f4f7f6; }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> <style>
+        :root { --primary: #3182ce; --primary-hover: #2b6cb0; --success: #38a169; --danger: #e53e3e; --warning: #d69e2e; --excel: #107c41; --dark: #2c3e50; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #333; }
         
         /* Layout */
@@ -47,22 +46,23 @@
         input, select { padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; }
         
         /* Buttons */
-        .btn { border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; color: white; width: 100%; transition: 0.3s; }
+        .btn { border: none; padding: 12px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; color: white; width: 100%; transition: 0.3s; display: flex; justify-content: center; align-items: center; text-align: center;}
         .btn-primary { background: var(--primary); }
         .btn-primary.edit-mode { background: var(--warning); color: #000; }
         .btn-danger { background: var(--danger); }
+        .btn-excel { background: var(--excel); }
+        .btn-excel:hover { background: #0e6133; }
         .btn-cancel { background: #a0aec0; display: none; }
         .btn-sm { padding: 6px 10px; font-size: 12px; width: auto; margin-right: 5px; }
         .btn-edit-sm { background: var(--warning); color: #000; }
         
-        .action-buttons { display: flex; gap: 10px; }
-        .btn-submit { flex: 2; }
-        .btn-export { flex: 1; }
+        .action-buttons { display: flex; gap: 10px; flex-wrap: wrap;}
+        .btn-submit { flex: 2; min-width: 200px; }
         
         .toggle-auth { color: var(--primary); cursor: pointer; font-size: 0.9em; margin-top: 15px; display: inline-block; }
 
         /* Table */
-        .filter-section { display: flex; justify-content: space-between; align-items: center; background: #f7fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
+        .filter-section { display: flex; justify-content: space-between; align-items: center; background: #f7fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
         .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
@@ -125,17 +125,19 @@
         </div>
         <div class="action-buttons">
             <button type="submit" class="btn btn-primary btn-submit" id="submitBtn">Simpan Transaksi</button>
-            <button type="button" class="btn btn-cancel" id="cancelBtn" onclick="cancelEdit()">Batal Edit</button>
-            <button type="button" class="btn btn-danger btn-export" onclick="exportPDF()">Unduh PDF</button>
+            <button type="button" class="btn btn-cancel" id="cancelBtn" onclick="cancelEdit()" style="flex: 1;">Batal Edit</button>
         </div>
     </form>
 
-    <div id="printArea">
+    <div id="printArea" style="margin-top: 30px;">
         <div class="filter-section no-print">
             <h3 style="margin: 0;">Riwayat Transaksi</h3>
-            <div style="display: flex; gap: 10px;">
-                <input type="month" id="monthFilter">
-                <button class="btn btn-primary btn-sm" onclick="resetFilter()">Semua</button>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <input type="month" id="monthFilter" style="width: auto; margin-bottom: 0;">
+                <button class="btn btn-primary btn-sm" onclick="resetFilter()" style="padding: 10px;">Semua</button>
+                <div style="border-left: 2px solid #e2e8f0; height: 30px; margin: 0 5px;"></div>
+                <button type="button" class="btn btn-danger btn-sm" onclick="exportPDF()" style="padding: 10px;">📄 Unduh PDF</button>
+                <button type="button" class="btn btn-excel btn-sm" onclick="exportExcel()" style="padding: 10px;">📊 Unduh Excel</button>
             </div>
         </div>
         <div class="table-container">
@@ -152,7 +154,7 @@
     import { getDatabase, ref, push, onValue, remove, update, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-    // Konfigurasi menggunakan API Key terbaru Anda
+    // Konfigurasi menggunakan API Key terbaru
     const firebaseConfig = {
         apiKey: "AIzaSyBZ1jbXJhhkW9PZhf67TDFV3e3X5XVEDU8", 
         authDomain: "tabunganapp-de8fd.firebaseapp.com",
@@ -172,7 +174,7 @@
     let savingsTarget = 0;
     let isLoginMode = true;
 
-    // AUTHENTICATION
+    // --- AUTHENTICATION ---
     window.toggleAuthMode = () => {
         isLoginMode = !isLoginMode;
         document.getElementById('authTitle').innerText = isLoginMode ? "Masuk ke Akun" : "Daftar Akun Baru";
@@ -192,7 +194,7 @@
         finally { btn.disabled = false; btn.innerText = isLoginMode ? "Masuk" : "Daftar"; }
     });
 
-    window.logoutUser = async () => { if(confirm('Keluar?')) await signOut(auth); };
+    window.logoutUser = async () => { if(confirm('Yakin ingin keluar dari akun?')) await signOut(auth); };
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -208,8 +210,8 @@
         }
     });
 
-    // APLIKASI UTAMA
-    const formatRupiah = (number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(number);
+    // --- APLIKASI UTAMA ---
+    const formatRupiah = (number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
 
     const typeSelect = document.getElementById('type');
     const categorySelect = document.getElementById('category');
@@ -250,7 +252,7 @@
         let filtered = mFilter ? allTransactions.filter(t => t.date.startsWith(mFilter)) : allTransactions;
 
         if (!filtered.length) {
-            tBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">Tidak ada data.</td></tr>';
+            tBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">Tidak ada data pada periode ini.</td></tr>';
             myChart.data.datasets[0].data = [0, 0];
         } else {
             filtered.forEach(t => {
@@ -262,7 +264,7 @@
                     <td>${t.description}</td>
                     <td><span class="badge ${t.type === 'in' ? 'badge-in' : 'badge-out'}">${t.type === 'in' ? 'Masuk' : 'Keluar'}</span></td>
                     <td class="${t.type === 'in' ? 'text-green' : 'text-red'}">${t.type === 'in' ? '+' : '-'} ${formatRupiah(t.amount)}</td>
-                    <td class="no-print">
+                    <td class="no-print" style="white-space: nowrap;">
                         <button class="btn-sm btn-edit-sm" onclick="siapkanEdit('${t.id}')">Edit</button>
                         <button class="btn-sm btn-danger" onclick="hapusData('${t.id}')">Hapus</button>
                     </td>`;
@@ -280,7 +282,7 @@
         }
     };
 
-    // FORM SUBMIT (TAMBAH & EDIT)
+    // --- FITUR FORM (TAMBAH & EDIT) ---
     document.getElementById('transactionForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -301,11 +303,10 @@
                 await push(ref(db, `users/${currentUserUid}/transactions`), dataBaru);
                 this.reset(); updateCategories();
             }
-        } catch (err) { alert("Gagal: " + err.message); } 
+        } catch (err) { alert("Gagal menyimpan data: " + err.message); } 
         finally { if(!editId) { btn.disabled = false; btn.innerText = 'Simpan Transaksi'; } }
     });
 
-    // FITUR EDIT KEMBALI
     window.siapkanEdit = (id) => {
         const trx = allTransactions.find(t => t.id === id);
         if(!trx) return;
@@ -332,22 +333,67 @@
         document.getElementById('cancelBtn').style.display = 'none';
     };
 
-    window.hapusData = async (id) => { if(confirm('Hapus?')) await remove(ref(db, `users/${currentUserUid}/transactions/${id}`)); };
+    window.hapusData = async (id) => { if(confirm('Yakin ingin menghapus catatan ini?')) await remove(ref(db, `users/${currentUserUid}/transactions/${id}`)); };
+    
     window.setTarget = async () => {
-        const val = prompt("Target tabungan (angka saja):", savingsTarget || "");
+        const val = prompt("Masukkan target tabungan Anda (contoh: 5000000):", savingsTarget || "");
         if (val && !isNaN(val)) await set(ref(db, `users/${currentUserUid}/settings/target`), parseFloat(val));
     };
+
     document.getElementById('monthFilter').addEventListener('change', renderUI);
     window.resetFilter = () => { document.getElementById('monthFilter').value = ''; renderUI(); };
+
+    // --- FITUR EKSPOR PDF (Sudah Diperbaiki) ---
     window.exportPDF = () => {
-        const style = document.createElement('style'); style.innerHTML = '@media print { .no-print { display: none !important; } }'; document.head.appendChild(style);
-        html2pdf().set({ margin: 0.5, filename: 'Laporan.pdf', jsPDF: { orientation: 'landscape' } }).from(document.getElementById('printArea')).save();
+        window.scrollTo(0, 0); // Cegah halaman kosong
+        const style = document.createElement('style'); 
+        style.innerHTML = '@media print { .no-print { display: none !important; } }'; 
+        document.head.appendChild(style);
+
+        const element = document.getElementById('printArea');
+        const opt = {
+            margin:       0.3,
+            filename:     'Laporan_Tabungan.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
     };
 
-    // PWA Service Worker Registration
+    // --- FITUR EKSPOR EXCEL (Fitur Baru) ---
+    window.exportExcel = () => {
+        const monthFilter = document.getElementById('monthFilter').value;
+        let filtered = monthFilter ? allTransactions.filter(t => t.date.startsWith(monthFilter)) : allTransactions;
+
+        if (filtered.length === 0) {
+            alert("Tidak ada data untuk diekspor ke Excel pada periode ini.");
+            return;
+        }
+
+        // Susun format data mentah untuk Excel
+        const dataToExport = filtered.map((t, index) => ({
+            "No": index + 1,
+            "Tanggal": t.date,
+            "Kategori": t.category,
+            "Keterangan": t.description,
+            "Jenis": t.type === 'in' ? 'Pemasukan' : 'Pengeluaran',
+            "Nominal (Rp)": t.amount
+        }));
+
+        // Buat Worksheet & Workbook
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Tabungan");
+
+        // Unduh File
+        XLSX.writeFile(workbook, "Laporan_Tabungan.xlsx");
+    };
+
+    // --- PWA Service Worker ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js').then(reg => console.log('SW terdaftar!', reg)).catch(err => console.log('SW Gagal', err));
+            navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Gagal', err));
         });
     }
 </script>
