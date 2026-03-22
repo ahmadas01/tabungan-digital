@@ -11,7 +11,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> <style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
         :root { --primary: #3182ce; --primary-hover: #2b6cb0; --success: #38a169; --danger: #e53e3e; --warning: #d69e2e; --excel: #107c41; --dark: #2c3e50; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #333; }
         
@@ -28,7 +30,7 @@
         .dashboard-top { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
         .balance-card { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .balance-card h3 { margin: 0 0 10px 0; font-weight: 400; font-size: 1.1em; opacity: 0.9; }
-        .balance-card h2 { margin: 0 0 20px 0; font-size: 2.5em; letter-spacing: 1px; }
+        .balance-card h2 { margin: 0 0 20px 0; font-size: 2.5em; letter-spacing: 1px; word-break: break-all; }
         .chart-card { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; justify-content: center; align-items: center; height: 220px; }
         
         /* Target Progress */
@@ -63,15 +65,47 @@
 
         /* Table */
         .filter-section { display: flex; justify-content: space-between; align-items: center; background: #f7fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
-        .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .filter-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0; width: 100%; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 600px; } /* Min width agar tabel bisa di-scroll di HP */
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         th { background-color: #edf2f7; color: #4a5568; font-weight: 600; text-transform: uppercase; font-size: 0.8em; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; white-space: nowrap; }
         .badge-in { background-color: #def7ec; color: #03543f; }
         .badge-out { background-color: #fde8e8; color: #9b1c1c; }
-        .text-green { color: var(--success); font-weight: bold; }
-        .text-red { color: var(--danger); font-weight: bold; }
+        .text-green { color: var(--success); font-weight: bold; white-space: nowrap; }
+        .text-red { color: var(--danger); font-weight: bold; white-space: nowrap; }
+        .action-td { white-space: nowrap; }
+
+        /* ====================================================
+           KODE RESPONSIVE UNTUK LAYAR HP (MOBILE FRIENDLY)
+           ==================================================== */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            #appSection, #authSection { padding: 15px; }
+            
+            /* Header jadi susun ke bawah */
+            .header-app { flex-direction: column; gap: 15px; text-align: center; }
+            .user-info { justify-content: center; width: 100%; }
+            
+            /* Kartu Saldo & Grafik jadi 1 kolom (atas-bawah) */
+            .dashboard-top { grid-template-columns: 1fr; }
+            .balance-card h2 { font-size: 2em; }
+            
+            /* Form Input jadi 1 baris ke bawah */
+            .form-grid { display: flex; flex-direction: column; gap: 10px; }
+            .form-group { margin-bottom: 5px; }
+            
+            /* Tombol-tombol aksi penuhi layar HP */
+            .action-buttons { flex-direction: column; }
+            .action-buttons .btn { width: 100%; margin-bottom: 5px; }
+            
+            /* Bagian Filter tabel menyesuaikan layar */
+            .filter-section { flex-direction: column; align-items: stretch; }
+            .filter-controls { flex-direction: column; align-items: stretch; width: 100%; }
+            .filter-controls > * { width: 100%; margin-bottom: 5px; }
+            .divider { display: none; } /* Sembunyikan garis pemisah di HP */
+        }
     </style>
 </head>
 <body>
@@ -131,11 +165,11 @@
 
     <div id="printArea" style="margin-top: 30px;">
         <div class="filter-section no-print">
-            <h3 style="margin: 0;">Riwayat Transaksi</h3>
-            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <h3 style="margin: 0; margin-bottom: 10px;">Riwayat Transaksi</h3>
+            <div class="filter-controls">
                 <input type="month" id="monthFilter" style="width: auto; margin-bottom: 0;">
                 <button class="btn btn-primary btn-sm" onclick="resetFilter()" style="padding: 10px;">Semua</button>
-                <div style="border-left: 2px solid #e2e8f0; height: 30px; margin: 0 5px;"></div>
+                <div class="divider" style="border-left: 2px solid #e2e8f0; height: 30px; margin: 0 5px;"></div>
                 <button type="button" class="btn btn-danger btn-sm" onclick="exportPDF()" style="padding: 10px;">📄 Unduh PDF</button>
                 <button type="button" class="btn btn-excel btn-sm" onclick="exportExcel()" style="padding: 10px;">📊 Unduh Excel</button>
             </div>
@@ -154,7 +188,6 @@
     import { getDatabase, ref, push, onValue, remove, update, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-    // Konfigurasi menggunakan API Key terbaru
     const firebaseConfig = {
         apiKey: "AIzaSyBZ1jbXJhhkW9PZhf67TDFV3e3X5XVEDU8", 
         authDomain: "tabunganapp-de8fd.firebaseapp.com",
@@ -264,7 +297,7 @@
                     <td>${t.description}</td>
                     <td><span class="badge ${t.type === 'in' ? 'badge-in' : 'badge-out'}">${t.type === 'in' ? 'Masuk' : 'Keluar'}</span></td>
                     <td class="${t.type === 'in' ? 'text-green' : 'text-red'}">${t.type === 'in' ? '+' : '-'} ${formatRupiah(t.amount)}</td>
-                    <td class="no-print" style="white-space: nowrap;">
+                    <td class="action-td no-print">
                         <button class="btn-sm btn-edit-sm" onclick="siapkanEdit('${t.id}')">Edit</button>
                         <button class="btn-sm btn-danger" onclick="hapusData('${t.id}')">Hapus</button>
                     </td>`;
@@ -343,9 +376,9 @@
     document.getElementById('monthFilter').addEventListener('change', renderUI);
     window.resetFilter = () => { document.getElementById('monthFilter').value = ''; renderUI(); };
 
-    // --- FITUR EKSPOR PDF (Sudah Diperbaiki) ---
+    // --- FITUR EKSPOR PDF ---
     window.exportPDF = () => {
-        window.scrollTo(0, 0); // Cegah halaman kosong
+        window.scrollTo(0, 0); 
         const style = document.createElement('style'); 
         style.innerHTML = '@media print { .no-print { display: none !important; } }'; 
         document.head.appendChild(style);
@@ -361,7 +394,7 @@
         html2pdf().set(opt).from(element).save();
     };
 
-    // --- FITUR EKSPOR EXCEL (Fitur Baru) ---
+    // --- FITUR EKSPOR EXCEL ---
     window.exportExcel = () => {
         const monthFilter = document.getElementById('monthFilter').value;
         let filtered = monthFilter ? allTransactions.filter(t => t.date.startsWith(monthFilter)) : allTransactions;
@@ -371,7 +404,6 @@
             return;
         }
 
-        // Susun format data mentah untuk Excel
         const dataToExport = filtered.map((t, index) => ({
             "No": index + 1,
             "Tanggal": t.date,
@@ -381,12 +413,9 @@
             "Nominal (Rp)": t.amount
         }));
 
-        // Buat Worksheet & Workbook
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Tabungan");
-
-        // Unduh File
         XLSX.writeFile(workbook, "Laporan_Tabungan.xlsx");
     };
 
